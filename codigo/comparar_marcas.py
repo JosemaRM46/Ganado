@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 import os
+import tkinter as tk
+from tkinter import filedialog, Label
+from PIL import Image, ImageTk
 
 def load_images_from_folder(folder):
     images = []
@@ -13,17 +16,13 @@ def load_images_from_folder(folder):
             filenames.append(filename)
     return images, filenames
 
-def compare_images(query_image_path, reference_folder):
-    # Cargar imagen de consulta
+def compare_images(query_image_path, reference_folder, root):
     query_image = cv2.imread(query_image_path, cv2.IMREAD_GRAYSCALE)
     if query_image is None:
         print("Error: No se pudo cargar la imagen de consulta.")
         return
     
-    # Cargar imágenes de referencia
     ref_images, ref_filenames = load_images_from_folder(reference_folder)
-    
-    # Inicializar ORB detector
     orb = cv2.ORB_create()
     kp1, des1 = orb.detectAndCompute(query_image, None)
     
@@ -47,10 +46,34 @@ def compare_images(query_image_path, reference_folder):
     
     if best_match is not None:
         print(f"La mejor coincidencia es: {best_filename} con {best_match_count} coincidencias.")
+        show_results(query_image_path, os.path.join(reference_folder, best_filename), root)
     else:
         print("No se encontraron coincidencias lo suficientemente buenas.")
+
+def show_results(query_image_path, best_match_path, root):
+    img1 = Image.open(query_image_path).resize((400, 400))
+    img2 = Image.open(best_match_path).resize((400, 400))
     
+    img1 = ImageTk.PhotoImage(img1)
+    img2 = ImageTk.PhotoImage(img2)
+    
+    label1 = Label(root, image=img1)
+    label1.image = img1
+    label1.grid(row=0, column=0)
+    
+    label2 = Label(root, image=img2)
+    label2.image = img2
+    label2.grid(row=0, column=1)
+    
+    root.mainloop()
+
+def select_image():
+    root = tk.Tk()
+    root.withdraw()
+    file_path = filedialog.askopenfilename()
+    if file_path:
+        root.deiconify()
+        compare_images(file_path, "imagenes/imagenes_marcas/", root)
+
 if __name__ == "__main__":
-    query_image_path = "imagenes/imagenes_comparar/images.jpg"
-    reference_folder = "imagenes/imagenes_marcas/"
-    compare_images(query_image_path, reference_folder)
+    select_image()
