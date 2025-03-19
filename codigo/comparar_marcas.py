@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 import os
 import tkinter as tk
 from tkinter import filedialog, Label, Canvas, Scrollbar, Frame
