@@ -27,9 +27,7 @@ def compare_images(query_image_path, reference_folder, root):
     kp1, des1 = orb.detectAndCompute(query_image, None)
     
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-    best_match = None
-    best_match_count = 0
-    best_filename = ""
+    match_results = []
     
     for ref_img, filename in zip(ref_images, ref_filenames):
         kp2, des2 = orb.detectAndCompute(ref_img, None)
@@ -39,31 +37,33 @@ def compare_images(query_image_path, reference_folder, root):
         matches = bf.match(des1, des2)
         matches = sorted(matches, key=lambda x: x.distance)
         
-        if len(matches) > best_match_count:
-            best_match_count = len(matches)
-            best_match = ref_img
-            best_filename = filename
+        match_percentage = len(matches) / len(kp1) if len(kp1) > 0 else 0
+        
+        if match_percentage >= 0.8:
+            match_results.append((filename, ref_img, len(matches)))
     
-    if best_match is not None:
-        print(f"La mejor coincidencia es: {best_filename} con {best_match_count} coincidencias.")
-        show_results(query_image_path, os.path.join(reference_folder, best_filename), root)
+    match_results.sort(key=lambda x: x[2], reverse=True)
+    
+    if match_results:
+        show_results(query_image_path, match_results, root)
     else:
-        print("No se encontraron coincidencias lo suficientemente buenas.")
+        print("No se encontraron coincidencias superiores al 80%.")
 
-def show_results(query_image_path, best_match_path, root):
+def show_results(query_image_path, matches, root):
     img1 = Image.open(query_image_path).resize((400, 400))
-    img2 = Image.open(best_match_path).resize((400, 400))
-    
     img1 = ImageTk.PhotoImage(img1)
-    img2 = ImageTk.PhotoImage(img2)
     
     label1 = Label(root, image=img1)
     label1.image = img1
     label1.grid(row=0, column=0)
     
-    label2 = Label(root, image=img2)
-    label2.image = img2
-    label2.grid(row=0, column=1)
+    for i, (filename, ref_img, match_count) in enumerate(matches):
+        img2 = Image.fromarray(ref_img).resize((400, 400))
+        img2 = ImageTk.PhotoImage(img2)
+        
+        label2 = Label(root, image=img2, text=f"{filename} ({match_count} coincidencias)", compound=tk.TOP)
+        label2.image = img2
+        label2.grid(row=0, column=i+1)
     
     root.mainloop()
 
